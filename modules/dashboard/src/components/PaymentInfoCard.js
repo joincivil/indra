@@ -12,18 +12,21 @@ import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import Switch from "@material-ui/core/Switch";
-import { VictoryChart, VictoryLine, VictoryLabel, VictoryAxis } from "victory";
 import DatePicker from "react-datepicker";
 import axios from "axios";
 import "react-datepicker/dist/react-datepicker.css";
+//import "chart.js";
+var Chart = require("chart.js");
+//var LineChart = require("react-chartjs").Line;
 
 const styles = theme => ({
   card: {
-    minWidth: "40%",
-    marginBottom: "3%"
+    margin: "3% 3% 3% 3%",
   },
   content: {
-    flexGrow: 1,
+    display:"flex",
+    flexGrow:0,
+    flexWrap:"wrap",
     padding: theme.spacing.unit * 3,
     height: "100vh",
     overflow: "auto"
@@ -34,6 +37,7 @@ class PaymentInfoCard extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      chart: null,
       totalPayments: null,
       paymentsLastDay: null,
       averagePaymentWei: {
@@ -108,11 +112,35 @@ class PaymentInfoCard extends Component {
     await this.setTrailingWeekPct();
     await this.setTrailingPct();
     await this.setAverageTrailingWeek();
-    //await this.setFrequency();
+    await this.setFrequency();
   };
 
   componentDidMount = async () => {
     await this._handleRefresh()
+    let chartCanvas = this.refs.chart;
+
+    let testChart = new Chart(chartCanvas, {
+      type: 'line',
+      data: {
+        labels: ["Week 1", "Week 2", "Week 3"],
+        datasets: [
+          {
+            label: "Payments",
+            fillColor: "rgba(220,220,220,0.2)",
+            strokeColor: "rgba(220,220,220,1)",
+            pointColor: "rgba(220,220,220,1)",
+            pointStrokeColor: "#fff",
+            pointHighlightFill: "#fff",
+            pointHighlightStroke: "rgba(220,220,220,1)",
+            data: [1, 5, 10]
+          }
+        ]
+      },
+      options: {}
+    });
+  
+    this.setState({chart: testChart});
+
   };
 
   /**************************
@@ -312,72 +340,20 @@ class PaymentInfoCard extends Component {
 
   setFrequency = async () => {
     const url = `${this.props.urls.api}/payments/frequency`
-    const res = (await axios.get(url)).data || null
+    const res = (await axios.get(url)) || null
     if (res) {
       this.setState({ freqArray: res });
     }
-  };
-
-  setChart = () => {
-    if (this.state.freqArray) {
-      // TESTING DATA
-      // let data = [
-      //   {day:"1", count:10},
-      //   {day:"2", count:14},
-      //   {day:"3", count:8}
-      // ]
-
-      const toRender = (
-        <VictoryChart
-          width={140}
-          height={140}
-          style={{
-            labels: {
-              fontSize: 4
-            }
-          }}
-        >
-          <VictoryLabel
-            x={50}
-            y={40}
-            text="Payments this Week"
-            style={{ fontSize: 4 }}
-          />
-          <VictoryLine
-            x="day"
-            y="count"
-            standalone={false}
-            style={{ data: { strokeWidth: 0.1 } }}
-            data={this.state.freqArray}
-          />
-          <VictoryAxis
-            domain={{ y: [0, 100] }}
-            dependentAxis={true}
-            label="Withdrawals"
-            style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
-          />
-          <VictoryAxis
-            dependentAxis={false}
-            domain={{ x: [0, 7] }}
-            tickValues={[0, 1, 2, 3, 4, 5, 6, 7]}
-            label="Day"
-            style={{ axisLabel: { fontSize: 2 }, tickLabels: { fontSize: 2 } }}
-          />
-        </VictoryChart>
-      );
-      console.log(toRender);
-      return toRender;
-      //this.setState({ withdrawalBreakdown: JSON.stringify(res) });
-    }
+    console.log(`frequency array: ${JSON.stringify(res)}`)
   };
 
 
   render() {
     const { classes } = this.props;
-    const PaymentFrequency = this.setChart();
 
     return (
       <div className={classes.content}>
+        <div>
         <Card className={classes.card}>
           <CardContent>
             <Typography variant="h5" style={{ marginBotton: "5%" }}>
@@ -553,9 +529,12 @@ class PaymentInfoCard extends Component {
             </div>
           </CardContent>
         </Card>
-        <Card className={classes.card}>
-          <div style={{ marginTop: "-20%" }}>{PaymentFrequency}</div>
+        </div>
+        <div>
+          <Card>
+            <canvas ref={'chart'} height={'400'} width={'600'}></canvas>
         </Card>
+        </div>
       </div>
     );
   }

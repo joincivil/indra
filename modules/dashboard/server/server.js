@@ -335,11 +335,7 @@ app.get("/payments/:purchaseId", async function(req, res) {
 app.get("/payments/frequency", async function(req, res) {
   await sendResFromQuery(
     `
-        SELECT date_part('day', "created_on") as day, count(1)::int as count
-        FROM _payments a
-        INNER JOIN _cm_channel_updates b
-        ON a."channel_update_id" = b."id"
-        WHERE b."created_on" > now() - interval '1 day'
+        SELECT count(*) from payments
     `,
     req,
     res
